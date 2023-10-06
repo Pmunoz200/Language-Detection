@@ -678,7 +678,7 @@ def Generative_models(
             psi=psi,
             tied=1,
         )
-    if final and model.lower() == "mvg" or model.lower() == "tied gaussian":
+    if final and (model.lower() == "mvg" or model.lower() == "tied gaussian"):
         return Probabilities, Prediction, accuracy, mu, cov
     elif final and model.lower() == "gmm":
         return Probabilities, Prediction, accuracy, mu, cov, w
@@ -727,7 +727,7 @@ def k_fold(
     low = 0
     all_values = np.c_[attributes.T, labels]
     all_values = np.random.permutation(all_values)
-    attributes = all_values[:, 0:12].T
+    attributes = all_values[:, 0:all_values.shape[1] - 1].T
     labels = all_values[:, -1].astype("int32")
     high = section_size
     model = model.lower()
@@ -918,7 +918,7 @@ def k_fold(
         final_acc += acc
         final_S = np.hstack((final_S, S))
         final_predictions = np.append(final_predictions, prediction)
-        print(final_S.shape)
+
     # (_, FPRlist, FNRlist, _) = minCostBayes(final_S, labels, pi, Cfn, Cfp)
     # ROCcurve(FPRlist, FNRlist, model)
     final_acc = round(final_acc / k, 4)
