@@ -24,19 +24,23 @@ def load(pathname, vizualization=0):
     return attribute, label
 
 
-def histogram_1n(male, female, x_axis="", y_axis=""):
-    plt.xlim((min(min(male), min(female)) - 1, max(max(male), max(female)) + 1))
-    plt.hist(male, color="blue", alpha=alpha_val, label=class_label[0], density=True, bins=np.arange(male.min(), male.max()+2,1), edgecolor='grey')
+def histogram_1n(non_target, target, x_axis="", y_axis="", legend = 1):
+    plt.xlim((min(min(non_target), min(target)) - 1, max(max(non_target), max(target)) + 1))
+    plt.hist(non_target, color="blue", alpha=alpha_val, label=class_label[0], density=True, bins=50, edgecolor='grey')
     plt.hist(
-        female, color="red", alpha=alpha_val, label=class_label[1], density=True, bins=np.arange(female.min(), female.max()+2,1), edgecolor='grey'
+        target, color="red", alpha=alpha_val, label=class_label[1], density=True, bins=20, edgecolor='grey'
     )
-    plt.legend(class_label)
+    if legend:
+        plt.legend(class_label)
+
+def scatter_2d(non_target, target, x_axis="", y_axis=""):
+    plt.scatter(non_target[0], non_target[1], c="blue", s=1.5)
+    plt.scatter(target[0], target[1], c="red", s=1.5)
+    plt.xlabel(x_axis)
+    plt.ylabel(y_axis)
 
 
-
-
-
-def graficar(attributes):
+def graficar(attributes, save = 0):
     attribute_names = []
     for i in range(attributes.shape[0]):
         attribute_names.append(str(i))
@@ -54,11 +58,43 @@ def graficar(attributes):
         for yk, yv in values_histogram.items():
             if xk == yk:
                 histogram_1n(xv[0], xv[1], x_axis=xk)
-
-                plt.savefig(f"{os.getcwd()}/Image/histogram-dim-{cont}.png")
+                if save:
+                    plt.savefig(f"{os.getcwd()}/Image/histogram-dim-{cont}.png")
                 plt.show()
                 cont += 1
 
+def long_graficar(attributes):
+    attribute_names = []
+    for i in range(attributes.shape[0]):
+        attribute_names.append(str(i))
+    values_histogram = {}
+
+    for i in range(len(attribute_names)):
+        values_histogram[attribute_names[i]] = [
+            attributes[i, labels == 0],
+            attributes[i, labels == 1],
+        ]
+
+    for a in attribute_names:
+        histogram_1n(
+            values_histogram[a][0],
+            values_histogram[a][1],
+            x_axis=a,
+        )
+
+
+    cont = 1
+    for xk, xv in values_histogram.items():
+        for yk, yv in values_histogram.items():
+            if xk == yk:
+                plt.subplot(attributes.shape[0], attributes.shape[0], cont)
+                histogram_1n(xv[0], xv[1], legend=0)
+                cont += 1
+            else:
+                plt.subplot(attributes.shape[0], attributes.shape[0], cont)
+                scatter_2d([xv[0], yv[0]], [xv[1], yv[1]])
+                cont += 1
+    plt.show()
 
 def graf_LDA(attributes, lables):
 
@@ -98,24 +134,26 @@ def graph_corr(attributes,labels):
     plt.title("Total attribute correlation")
     plt.savefig(f"{os.getcwd()}/Image/Dataset-correlation.png")
     plt.show()
-    #correlation of males
-    males = attributes[:, labels==0]
-    corr_attr = np.corrcoef(males)
+    #correlation of non-target language
+    nont_language = attributes[:, labels==0]
+    corr_attr = np.corrcoef(nont_language)
     sns.heatmap(corr_attr, cmap='Blues')
     plt.title(f"{class_label[0]} attribute correlation")
     plt.savefig(f"{os.getcwd()}/Image/{class_label[0]}-correlation.png")
     plt.show()
-    #correlation of females
-    females= attributes[:, labels==1]
-    corr_attr = np.corrcoef(females)
+    #correlation of target language
+    targ_language= attributes[:, labels==1]
+    corr_attr = np.corrcoef(targ_language)
     sns.heatmap(corr_attr, cmap="Reds")
-    plt.savefig(f"{os.getcwd()}/Image/{class_label[1]}-correlation.png")
     plt.title(f"{class_label[1]} attribute correlation")
+    plt.savefig(f"{os.getcwd()}/Image/{class_label[1]}-correlation.png")
     plt.show()
 
 if __name__ == "__main__":
     path = os.path.abspath("data/Train.txt")
     [attributes, labels] = load(path)
+    standard_deviation = np.std(attributes)
+    z_data = ML.center_data(attributes) / standard_deviation
     for i in range(attributes.shape[0]):
         print(f"max {i}: {max(attributes[i])}", end="\t")
         print(f"min {i}: {min(attributes[i])}")
@@ -127,8 +165,9 @@ if __name__ == "__main__":
     print(f"Possible classes: {class_label[0]}, {class_label[1]}")
 
 
-    graficar(attributes)
-    graf_LDA(attributes, labels)
-    graf_PCA(attributes, labels)
+    # graficar(attributes)
+    # graf_LDA(attributes, labels)
+    # graf_PCA(attributes, labels)
     graph_corr(attributes, labels)
+    # long_graficar(attributes)
 
