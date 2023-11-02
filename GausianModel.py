@@ -39,9 +39,9 @@ def gaussian_train(attributes, labels, headers, priorProb = 0, pi=[0.5], Cfn=1, 
     ### Parameter definition ###
     tableKFold = []
     priorProb = ML.vcol(np.ones(2) * 0.5) if not priorProb else priorProb
+    k_fold_value = 5
     ####
     tableKFold.append(["Full"])
-    k_fold_value = 5
     c2 = 1
     list_minDCF = []
     list_DCF = []
@@ -54,10 +54,11 @@ def gaussian_train(attributes, labels, headers, priorProb = 0, pi=[0.5], Cfn=1, 
             tableKFold[0][c2].append(minDCF)
             list_minDCF.append(minDCF)
             list_DCF.append(DCFnorm)
+            print(sum(Predictions))
         c2 += 1
 
     cont = 1
-    for i in [7, 6]:
+    for i in [6,5]:
         tableKFold.append([f"PCA {i}"])
         c2 = 1
         for model in headers:
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     standard_deviation = np.std(full_train_att)
     z_data = ML.center_data(full_train_att) / standard_deviation
     models = ["MVG", "Naive", "Tied Gaussian", "Tied Naive"]
-    pi = [0.1, 0.5]
+    pi = [0.1, 0.2, 0.5]
     print("Full dataset")
     gaussian_train(full_train_att, full_train_label,models, pi=pi)
     print("Z-Norm dataset")
