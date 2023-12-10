@@ -71,23 +71,20 @@ if __name__ == "__main__":
     q=[0,1]
     k=5
     
-    regression_train(full_train_att, full_train_label, l_list, pi=pi, quadratic=0)
-    regression_train(full_train_att, full_train_label, l_list,pi=pi, quadratic=1)
-        
-    # #Z-norm
     standard_deviation = np.std(full_train_att)
     z_data = ML.center_data(full_train_att) / standard_deviation
-    regression_train(z_data, full_train_label, l_list, pi=pi, quadratic=0)
-    regression_train(z_data, full_train_label, l_list, pi=pi, quadratic=1)
 
-    ##   PCA regression training ##
-    ## PCA to 6 dimensions
-    regression_train(full_train_att, full_train_label, l_list, pi=pi, pca=6, quadratic=0)
-    regression_train(full_train_att, full_train_label, l_list, pi=pi, pca=6, quadratic=1)
+    ## LOGISTIC REGRESSIONS ##
+    regression_train(full_train_att, full_train_label, l_list, pi=pi, quadratic=0) # Full dataset
+    regression_train(z_data, full_train_label, l_list, pi=pi, quadratic=0) # Z-norm dataset
+    regression_train(full_train_att, full_train_label, l_list, pi=pi, pca=5, quadratic=0) # With PCA 5 applied
 
-    ## PCA to 5 dimensions
-    regression_train(full_train_att, full_train_label, l_list, pi=pi, pca=5, quadratic=0)
+
+    ## QUADRATIC REGRESSIONS ##    
+    regression_train(full_train_att, full_train_label, l_list,pi=pi, quadratic=1)
+    regression_train(z_data, full_train_label,l_list, pi=pi, quadratic=1)
     regression_train(full_train_att, full_train_label, l_list, pi=pi, pca=5, quadratic=1)
+
     
       
     searchL=float(input("Enter a lambda value you want to search for: "))
