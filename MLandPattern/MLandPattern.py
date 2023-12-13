@@ -704,6 +704,7 @@ def k_fold(
     niter=0,
     alpha=0,
     psi=0,
+    C = 1
 ):
     """
     Applies a k-fold cross validation on the dataset, applying the specified model.
@@ -717,6 +718,9 @@ def k_fold(
         - `Tied Gaussian`: Tied Multivariate Gaussian Model
         - `Tied naive`: Tied Naive Bayes Classifier
         - `Regression` : Binomial Regression
+        - `SVM`: Support Vector Machine (default)
+        - `polynomial` : Support Vector Machine with Polynomial Kernel model
+        - `radial` : Support vector Machine with Radial Kernel model
     :param: `PCA_m` (optional) a number of dimensions to reduce using PCA method
     :param: `LDA_m` (optional) a number of dimensions to reduce using LDA mehtod
     :param: `l` (optional) hyperparameter to use when the method is linera regression, default value set to 0.001
@@ -768,6 +772,8 @@ def k_fold(
                         quadratic=quadratic,
                         pit=pit
                     )
+            elif model == "svm" or model == "polynomial" or model == "radial":
+                [S, prediction, acc] = svm(train_att, train_labels, validation_att, validation_labels, C, model=model)
             else:
                 if final and model != "gmm":
                     [S, prediction, acc, mu, cov] = Generative_models(
@@ -865,6 +871,8 @@ def k_fold(
                     quadratic=quadratic,
                     pit=pit
                 )
+        elif model == "svm" or model == "polynomial" or model == "radial":
+                [S, prediction, acc] = svm(train_att, train_labels, validation_att, validation_labels, C, model=model)
         else:
             if final and model.lower() != "gmm":
                 [S, prediction, acc, mu, cov] = Generative_models(
