@@ -47,14 +47,15 @@ def gaussian_train(attributes, labels, headers, priorProb = 0, pi=[0.5], Cfn=1, 
     list_DCF = []
     for model in headers:
         tableKFold[0].append([])
-        for p in pi:
-            [SPost, Predictions, accuracy, DCFnorm, minDCF] = ML.k_fold(
-                k_fold_value, attributes, labels, priorProb, model=model, pi=p
+
+        [SPost, Predictions, accuracy, minDCF] = ML.k_fold(
+                k_fold_value, attributes, labels, priorProb, model=model, pi=pi
             )
-            tableKFold[0][c2].append(minDCF)
-            list_minDCF.append(minDCF)
-            list_DCF.append(DCFnorm)
-            print(sum(Predictions))
+        for p in pi:
+            if p == 0.5:
+                minDCF[p] = (minDCF[0.1] + minDCF[p]) / 2
+            tableKFold[0][c2].append([minDCF[p]])
+        list_minDCF.append(minDCF)
         c2 += 1
 
     cont = 1
@@ -63,18 +64,20 @@ def gaussian_train(attributes, labels, headers, priorProb = 0, pi=[0.5], Cfn=1, 
         c2 = 1
         for model in headers:
             tableKFold[cont].append([])
-            for p in pi:
-                [_, _, _, DCFnorm, minDCF] = ML.k_fold(
+            [_, _, _, minDCF] = ML.k_fold(
                     k_fold_value,
                     attributes,
                     labels,
                     priorProb,
+                    pi=pi,
                     model=model,
                     PCA_m=i,
                 )
-                tableKFold[cont][c2].append(minDCF)
+            for p in pi:
+                if p == 0.5:
+                    minDCF[p] = (minDCF[0.1] + minDCF[p]) / 2
+                tableKFold[cont][c2].append([minDCF[p]])
                 list_minDCF.append(minDCF)
-                list_DCF.append(DCFnorm)
             c2 += 1
         cont += 1
 

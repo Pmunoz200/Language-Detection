@@ -28,26 +28,26 @@ def regression_train(attributes, labels, lamda, pi=[0.5], quadratic = 0, k = 5, 
     if quadratic==0:
         print(f"Logarithmic regression with k-fold = {k}")
     for l in lamda:
-        for p in pi:
-            [_, _, accuracy, DCFnorm, minDCF] = ML.k_fold(
+        [_, _, accuracy, minDCF] = ML.k_fold(
                 k,
                 attributes,
                 labels,
                 priorProb,
                 "regression",
                 l=l,
-                pi=p,
+                pi=pi,
                 quadratic=quadratic,
                 PCA_m=pca
             )
+        for p in pi:
             if p== 0.1:
-                minDCFvalues1.append(minDCF)
+                minDCFvalues1.append(minDCF[p])
                 print(minDCFvalues1)
             if p== 0.2:
-                minDCFvalues2.append(minDCF)
+                minDCFvalues2.append(minDCF[p])
             if p== 0.5:
                 print(minDCFvalues1[-1])
-                val = (minDCF + minDCFvalues1[-1])/2
+                val = (minDCF[p] + minDCFvalues1[-1])/2
                 minDCFvalues5.append(val)
     
     plt.figure(figsize=(10, 6))
@@ -106,51 +106,22 @@ if __name__ == "__main__":
                 tableKFold.append([f"LR {x}"])
             if i==1:
                 tableKFold.append([f"QLR {x}"]) 
-            for p in pi:
-                [_, _, accuracy, DCFnorm, minDCF] = ML.k_fold(
-                        k,
-                        full_train_att,
-                        full_train_label,
-                        priorProb,
-                        "regression",
-                        l=searchL,
-                        pi=p,
-                        quadratic=i,
-                        pit=x
-                    )
-                if p == 0.1:
-                    prev_1 = minDCF
-                elif p == 0.5:
-                    minDCF = (prev_1 + minDCF) / 2
-                tableKFold[cont].append([DCFnorm, minDCF])
-            for p in pi:
-                [_, _, accuracy, DCFnorm, minDCF] = ML.k_fold(
+            [_, _, accuracy, minDCF] = ML.k_fold(
                         k,
                         z_data,
                         full_train_label,
                         priorProb,
                         "regression",
                         l=searchL,
-                        pi=p,
+                        pi=pi,
                         quadratic=i,
                         pit=x
                     )
-                if p == 0.1:
-                    prev_1 = minDCF
-                elif p == 0.5:
-                    minDCF = (prev_1 + minDCF) / 2
-                tableKFold[cont].append([DCFnorm, minDCF])
+            for p in pi:
+                if p == 0.5:
+                    minDCF[p] = (minDCF[0.1] + minDCF[p]) / 2
+                print(minDCF)
+                tableKFold[cont].append([minDCF[p]])
             cont += 1
    
     print(tabulate(tableKFold, headers))
-    # [_, _, accuracy, DCFnorm, minDCF] = ML.k_fold(
-    #                     k,
-    #                     full_train_att,
-    #                     full_train_label,
-    #                     priorProb,
-    #                     "regression",
-    #                     l=10**-3,
-    #                     pi=0.5,
-    #                     quadratic=0,
-    #                     pit=0.5
-    #                 )  
