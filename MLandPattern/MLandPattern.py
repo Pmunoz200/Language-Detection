@@ -695,7 +695,7 @@ def k_fold(
     PCA_m=0,
     LDA_m=0,
     l=0.001,
-    pi=0.5,
+    pi=[0.5],
     Cfn=1,
     Cfp=1,
     final=0,
@@ -704,7 +704,10 @@ def k_fold(
     niter=0,
     alpha=0,
     psi=0,
-    C = 1
+    C = 1,
+    gamma=1,
+    dim = 2,
+    c=1
 ):
     """
     Applies a k-fold cross validation on the dataset, applying the specified model.
@@ -724,6 +727,7 @@ def k_fold(
     :param: `PCA_m` (optional) a number of dimensions to reduce using PCA method
     :param: `LDA_m` (optional) a number of dimensions to reduce using LDA mehtod
     :param: `l` (optional) hyperparameter to use when the method is linera regression, default value set to 0.001
+    :param: `pi` (optional) hyperparameter to use when calculating the Bayes risk, default value set to 0.5
     :return final_acc: Accuracy of the validation set
     :return final_S: matrix associated with the probability array
     """
@@ -735,6 +739,10 @@ def k_fold(
     labels = all_values[:, -1].astype("int32")
     high = section_size
     model = model.lower()
+    minDCF_dic = {}
+    S_dic = {}
+    for p in pi:
+        minDCF_dic[p] = 0
     for i in range(k):
         if not i:
             validation_att = attributes[:, low:high]
@@ -773,7 +781,7 @@ def k_fold(
                         pit=pit
                     )
             elif model == "svm" or model == "polynomial" or model == "radial":
-                [S, prediction, acc] = svm(train_att, train_labels, validation_att, validation_labels, C, model=model)
+                [S, prediction, acc] = svm(train_att, train_labels, validation_att, validation_labels, C, model=model, gamma=gamma, dim=dim, c=c)
             else:
                 if final and model != "gmm":
                     [S, prediction, acc, mu, cov] = Generative_models(
@@ -820,12 +828,11 @@ def k_fold(
                         alpha=alpha
                     )
             confusion_matrix = ConfMat(prediction, validation_labels)
-            DCF, DCFnorm = Bayes_risk(confusion_matrix, pi, Cfn, Cfp)
-            (minDCF, _, _, _) = minCostBayes(S, validation_labels, pi, Cfn, Cfp)
-            final_DCF = DCFnorm
-            final_min_DCF = minDCF
+            for p in pi:
+                (minDCF, _, _, _) = minCostBayes(S, validation_labels, p, Cfn, Cfp)
+                minDCF_dic[p] += minDCF
+                S_dic[p] = S
             final_acc = acc
-            final_S = S
             final_predictions = prediction
             continue
         low += section_size
@@ -872,7 +879,8 @@ def k_fold(
                     pit=pit
                 )
         elif model == "svm" or model == "polynomial" or model == "radial":
-                [S, prediction, acc] = svm(train_att, train_labels, validation_att, validation_labels, C, model=model)
+                [S, prediction, acc] = svm(
+                    train_att, train_labels, validation_att, validation_labels, C, model=model, gamma=gamma, dim=dim, c=c) 
         else:
             if final and model.lower() != "gmm":
                 [S, prediction, acc, mu, cov] = Generative_models(
@@ -919,19 +927,18 @@ def k_fold(
                     alpha=alpha
                 )
         confusion_matrix = ConfMat(prediction, validation_labels)
-        DCF, DCFnorm = Bayes_risk(confusion_matrix, pi, Cfn, Cfp)
-        (minDCF, _, _, _) = minCostBayes(S, validation_labels, pi, Cfn, Cfp)
-        final_DCF += DCFnorm
-        final_min_DCF += minDCF
+        for p in pi:
+            (minDCF, _, _, _) = minCostBayes(S, validation_labels, p, Cfn, Cfp)
+            minDCF_dic[p] += minDCF
+            S_dic[p] = np.hstack((S_dic[p], S))
         final_acc += acc
-        final_S = np.hstack((final_S, S))
         final_predictions = np.append(final_predictions, prediction)
 
     # (_, FPRlist, FNRlist, _) = minCostBayes(final_S, labels, pi, Cfn, Cfp)
     # ROCcurve(FPRlist, FNRlist, model)
     final_acc = round(final_acc / k, 4)
-    final_DCF = round(final_DCF / k, 4)
-    final_min_DCF = round(final_min_DCF / k, 4)
+    for p in pi:
+        minDCF_dic[p] = round(minDCF_dic[p] / k, 4)
     # BayesErrorPlot(final_S, labels, Cfn, Cfp, model)
     if model == "regression" and final:
         final_w /= k
@@ -939,20 +946,18 @@ def k_fold(
         if LDA_m:
             final_LDA /= k
             return (
-                final_S,
+                S_dic,
                 prediction,
                 final_acc,
-                final_DCF,
-                final_min_DCF,
+                minDCF_dic,
                 final_w,
                 final_b,
             )
         return (
-            final_S,
+            S_dic,
             prediction,
             final_acc,
-            final_DCF,
-            final_min_DCF,
+            minDCF_dic,
             final_w,
             final_b
         )
@@ -961,17 +966,16 @@ def k_fold(
         final_cov /= k
         final_w /= k
         return (
-            final_S,
+            S_dic,
             prediction,
             final_acc,
-            final_DCF,
-            final_min_DCF,
+            minDCF_dic,
             final_mu,
             final_cov,
             final_w,
         )
     else:
-        return final_S, prediction, final_acc, final_DCF, final_min_DCF
+        return S_dic, prediction, final_acc, minDCF_dic
 
 
 def logreg_obj(v, DTR, LTR, l, pit):
