@@ -827,7 +827,6 @@ def k_fold(
                         psi=psi,
                         alpha=alpha
                     )
-            confusion_matrix = ConfMat(prediction, validation_labels)
             for p in pi:
                 (minDCF, _, _, _) = minCostBayes(S, validation_labels, p, Cfn, Cfp)
                 minDCF_dic[p] += minDCF
@@ -926,7 +925,6 @@ def k_fold(
                     psi=psi,
                     alpha=alpha
                 )
-        confusion_matrix = ConfMat(prediction, validation_labels)
         for p in pi:
             (minDCF, _, _, _) = minCostBayes(S, validation_labels, p, Cfn, Cfp)
             minDCF_dic[p] += minDCF
@@ -1443,7 +1441,6 @@ def GMM(
 ):
     class_labels = np.unique(train_labels)
     cov = multiclass_covariance(train_data, train_labels)
-    multi_mu = multiclass_mean(train_data, train_labels)
     densities = []
     class_mu = []
     class_c = []
