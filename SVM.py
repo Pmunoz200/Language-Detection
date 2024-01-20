@@ -204,11 +204,16 @@ if __name__ == "__main__":
 
 
     ### -------Searching for the final table of values----------- ###
-    c_vals = [0.1, 0.1, 0.0001]
+    c_vals = [0.0001, 0.0001, 0.0001]
+    # headers = [
+    #     "Radial SVM",
+    #     "Polynomial SVM z_norm",
+    #     "Polynomial SVM",
+    # ]
     headers = [
-        "Radial SVM",
-        "Polynomial SVM z_norm",
-        "Polynomial SVM",
+        "Polynomial SVM pi = 0.1 z_norm",
+        "Polynomial SVM pi = 0.2 z_norm",
+        "Polynomial SVM pi = 0.5 z_norm",
     ]
     tableKFold = []
     pit = [0.1, 0.2, 0.5]
@@ -224,7 +229,8 @@ if __name__ == "__main__":
                     priorProb,
                     headers[x].split(" ")[0].lower(),
                     pi=pi,
-                    C=c_vals[x]
+                    C=c_vals[x],
+                    pit=pit[x],
                 )
         else:
             [_, _, accuracy, minDCF] = ML.k_fold(
@@ -235,7 +241,8 @@ if __name__ == "__main__":
                     headers[x].split(" ")[0].lower(),
                     pi=pi,
                     C=c_vals[x],
-                    gamma=gamma
+                    gamma=gamma,
+                    pit=pit[x],
                 )
         for p in pi:
             if p == 0.5:
