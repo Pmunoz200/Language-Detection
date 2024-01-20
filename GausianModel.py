@@ -82,7 +82,6 @@ def gaussian_train(attributes, labels, headers, priorProb = 0, pi=[0.5], Cfn=1, 
         cont += 1
 
     newHeaders = []
-    print("PCA with k-fold")
     for i in headers:
         newHeaders.append(i + " MinDCF" + " ".join(str(p) for p in pi))
     print(tabulate(tableKFold, headers=newHeaders))
