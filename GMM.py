@@ -139,7 +139,7 @@ if __name__ == "__main__":
     f"{model}:[0.1, 4, 0.01]",
     f"{model}:[0.1, 5, 0.01]",
     ]
-    # headers = ["GMM:[0.1, 2, 0.01]","Tied:[0.1, 5, 0.01]"]
+
     pi = [0.1, 0.2,  0.5]
     standard_deviation = np.std(full_train_att)
     z_data = ML.center_data(full_train_att) / standard_deviation
