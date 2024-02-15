@@ -109,16 +109,6 @@ def minCostBayes(llr, labels, pi, Cfn, Cfp):
     return minDCF, FPRlist, FNRlist
 
 
-def ROCcurve(FPRlist, FNRlist):
-    TPR = 1 - FNRlist
-
-    plt.figure()
-    plt.plot(FPRlist, TPR)
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.show()
-
 
 def BayesErrorPlot(llr, labels, confusion_matrix, Cfn, Cfp):
     DCFlist = []
@@ -162,7 +152,7 @@ def linear_regression_2C(feat, lab, l):
     
     return wopt, bopt
 
-def crossValidation_logreg(K, DTR, LTR, l, nclasses, model, LOO=False):  
+def score_calibration(K, DTR, LTR, l, LOO=False):  
     """K is n of folds, lambda and model must be a function that returns an array of predictions"""
     #given DTR, LTR and K compute K-folds cross validation (Leave One Out with K = N)
     #give a model function that accepts DTR, LTR, DTV and gives out some predictions to be confronted with LTV
@@ -182,8 +172,8 @@ def crossValidation_logreg(K, DTR, LTR, l, nclasses, model, LOO=False):
         LTRr = LTR[mask]
         DTV = DTR[:,notmask]
         #LTV = LTR[notmask]
-        #LTV = LTR[notmask]        
-        wopt, bopt = model(DTRr, LTRr, l)        
+        #LTV = LTR[notmask]
+        wopt, bopt = linear_regression_2C(DTRr, LTRr, l)        
         #predictions = (numpy.dot(vrow(wopt), DTV) + bopt) > 0  
         scores = np.dot(ML.vrow(wopt), DTV) + bopt
         #cost = minimum_detection_cost(0.5, 1, 1, scores.ravel(), LTV)
@@ -214,43 +204,45 @@ if __name__ == "__main__":
     standard_deviation = np.std(full_train_att)
     z_data = ML.center_data(full_train_att) / standard_deviation
 
-    # [SQuad, labels_quad, minDCF_quad] = ML.k_fold(k, full_train_att, full_train_label, priorProb, model="regression", pi=pi, pit=0.5, quadratic=1, score_calibration_flag=1)
-    # print("Quadratic MinDCF: ", (minDCF_quad[0.5] + minDCF_quad[0.1])/2)
-    [SRadial, labels_radial, minDCF_radial] = ML.k_fold(k, z_data, full_train_label, priorProb, model="radial", pi=pi, pit=0.5, gamma=0.01, score_calibration_flag=1)
+    [SQuad, labels_quad, minDCF_quad] = ML.k_fold(k, full_train_att, full_train_label, priorProb, model="regression", pi=pi, pit=0.5, quadratic=1, score_calibration_flag=1)
+    print("Quadratic MinDCF: ", (minDCF_quad[0.5] + minDCF_quad[0.1])/2)
+    [SRadial, labels_radial, minDCF_radial] = ML.k_fold(k, full_train_att, full_train_label, priorProb, model="radial", pi=pi, pit=0.5, gamma=0.01, score_calibration_flag=1)
     print("MinDCF radial: ", (minDCF_radial[0.5] + minDCF_radial[0.1])/2)
-    # [Spoly, labels, minDCF] = ML.k_fold(k, z_data, full_train_label, priorProb, model="polynomial", pi=pi, pit=0.5, score_calibration_flag=1, C=0.1)
-    # print("Polynomial MinDCF: ", (minDCF[0.5] + minDCF[0.1])/2)
-    # [SGMM, labels_gmm, minDCF_gmm] = ML.k_fold(k, z_data, full_train_label, priorProb, model="GMM", pi=pi, pit=0.5, niter=4, alpha=0.1, psi=0.01, score_calibration_flag=1)
+    [Spoly, labels, minDCF] = ML.k_fold(k, z_data, full_train_label, priorProb, model="polynomial", pi=pi, pit=0.5, score_calibration_flag=1, C=0.1)
+    print("Polynomial MinDCF: ", (minDCF[0.5] + minDCF[0.1])/2)
+    [SGMM, labels_gmm, minDCF_gmm] = ML.k_fold(k, z_data, full_train_label, priorProb, model="GMM", pi=pi, pit=0.5, niter=2, alpha=0.1, psi=0.01, score_calibration_flag=1)
+    print("GMM MinDCF: ", (minDCF_gmm[0.5] + minDCF_gmm[0.1])/2)
 
-    # ML.BayesErrorPlot(SQuad, labels_quad, Cfn, Cfp, model="quadratic")
+    ML.BayesErrorPlot(SQuad, labels_quad, Cfn, Cfp, model="quadratic")
     ML.BayesErrorPlot(SRadial, labels_radial, Cfn, Cfp, model="Radial")
-    # ML.BayesErrorPlot(Spoly, labels, Cfn, Cfp, model="polynomial")
-    # ML.BayesErrorPlot(SGMM, labels_gmm, Cfn, Cfp, model="GMM")
+    ML.BayesErrorPlot(Spoly, labels, Cfn, Cfp, model="polynomial")
+    ML.BayesErrorPlot(SGMM, labels_gmm, Cfn, Cfp, model="GMM")
 
     # Calibrate the score
     pi = [0.1, 0.5]
-    # labels_quad = np.array(labels_quad)
+    labels_quad = np.array(labels_quad)
     labels_radial = np.array(labels_radial)
-    # labels = np.array(labels)
-    # labels_gmm = np.array(labels_gmm)
+    labels = np.array(labels)
+    labels_gmm = np.array(labels_gmm)
 
-    # scQuad_cal = crossValidation_logreg(5, SQuad, labels_quad, 0.00001, 2, linear_regression_2C)
-    # scQuad_cal = np.array(scQuad_cal)
-    # labels_quad = labels_quad[:-1]
-    # print("Quadratic MinDCF Calibrated: ", (ML.minCostBayes(scQuad_cal, labels_quad, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scQuad_cal, labels_quad, pi[0], Cfn, Cfp)[0])/2)
-    scRadial_cal = crossValidation_logreg(5, SRadial, labels_radial, 0.00001, 2, linear_regression_2C)
+    scQuad_cal = score_calibration(5, SQuad, labels_quad, 0.00001)
+    scQuad_cal = np.array(scQuad_cal)
+    labels_quad = labels_quad[:-1]
+    print("Quadratic MinDCF Calibrated: ", (ML.minCostBayes(scQuad_cal, labels_quad, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scQuad_cal, labels_quad, pi[0], Cfn, Cfp)[0])/2)
+    scRadial_cal = score_calibration(5, SRadial, labels_radial, 0.00001)
     scRadial_cal = np.array(scRadial_cal)
     labels_radial = labels_radial[:-1]
     print("MinDCF Naive Calibrated: ", (ML.minCostBayes(scRadial_cal, labels_radial, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scRadial_cal, labels_radial, pi[0], Cfn, Cfp)[0])/2)
-    # scPoly_cal = crossValidation_logreg(5, Spoly, labels, 0.00001, 2, linear_regression_2C)
-    # scPoly_cal = np.array(scPoly_cal)
-    # labels = labels[:-1]
-    # print("Polynomial MinDCF Calibrated: ", (ML.minCostBayes(scPoly_cal, labels, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scPoly_cal, labels, pi[0], Cfn, Cfp)[0])/2)
-    # scGMM_cal = crossValidation_logreg(5, SGMM, labels_gmm, 0.00001, 2, linear_regression_2C)
-    # scGMM_cal = np.array(scGMM_cal)
-    # labels_gmm = labels_gmm[:-1]
+    scPoly_cal = score_calibration(5, Spoly, labels, 0.00001)
+    scPoly_cal = np.array(scPoly_cal)
+    labels = labels[:-1]
+    print("Polynomial MinDCF Calibrated: ", (ML.minCostBayes(scPoly_cal, labels, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scPoly_cal, labels, pi[0], Cfn, Cfp)[0])/2)
+    scGMM_cal = score_calibration(5, SGMM, labels_gmm, 0.00001)
+    scGMM_cal = np.array(scGMM_cal)
+    labels_gmm = labels_gmm[:-1]
+    print("GMM MinDCF Calibrated: ", (ML.minCostBayes(scGMM_cal, labels_gmm, pi[1], Cfn, Cfp)[0] + ML.minCostBayes(scGMM_cal, labels_gmm, pi[0], Cfn, Cfp)[0])/2)
 
-    # ML.BayesErrorPlot(scQuad_cal, labels_quad, Cfn, Cfp, model="quadratic Calibrated")
+    ML.BayesErrorPlot(scQuad_cal, labels_quad, Cfn, Cfp, model="quadratic Calibrated")
     ML.BayesErrorPlot(scRadial_cal, labels_radial, Cfn, Cfp, model="Radial Calibrated")
-    # ML.BayesErrorPlot(scPoly_cal, labels, Cfn, Cfp, model="polynomial Calibrated")
-    # ML.BayesErrorPlot(scGMM_cal, labels_gmm, Cfn, Cfp, model="GMM Calibrated")
+    ML.BayesErrorPlot(scPoly_cal, labels, Cfn, Cfp, model="polynomial Calibrated")
+    ML.BayesErrorPlot(scGMM_cal, labels_gmm, Cfn, Cfp, model="GMM Calibrated")
